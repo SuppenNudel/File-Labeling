@@ -1,6 +1,6 @@
 package de.rohmio.util.filelabeling.model;
 
-public class Tag {
+public class Tag implements ITag {
 	
 	private int id;
 	private String name;
@@ -23,14 +23,17 @@ public class Tag {
 		return String.format("%s (%s)", name, category);
 	}
 	
+	@Override
 	public int getId() {
 		return id;
 	}
 	
+	@Override
 	public String getName() {
 		return name;
 	}
 	
+	@Override
 	public String getCategory() {
 		return category;
 	}

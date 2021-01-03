@@ -4,9 +4,12 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.InsertValuesStep2;
@@ -15,7 +18,10 @@ import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 
+import de.rohmio.util.filelabeling.model.ITag;
+import de.rohmio.util.filelabeling.model.ITaggedFile;
 import de.rohmio.util.filelabeling.model.Tag;
+import de.rohmio.util.filelabeling.model.TaggedFile;
 
 public class SQLiteConnector {
 
@@ -95,18 +101,40 @@ public class SQLiteConnector {
 		});
 	}
 	
-	public int createFile(File file, Tag tag) {
-		List<String> tags = doOperation(context -> context.select(field_id)
-				.from(table_tags)
-				.where(field_name.eq(tag.getName())
-						.and(field_category.eq(tag.getCategory())))
-				.fetchInto(String.class));
+	public int createFile(File file, ITag... tags) {
+		Condition condition = null;
+		if(tags.length == 0) {
+			condition= DSL.condition(false);
+		} else {
+			List<ITag> tagList = Arrays.asList(tags);
+			List<Condition> conditions = tagList.stream()
+					.map(tag -> field_name.eq(tag.getName()).and(field_category.eq(tag.getCategory())))
+					.collect(Collectors.toList());
+			condition = conditions.get(0);
+			for(int i=1; i<conditions.size(); ++i) {
+				condition = condition.or(conditions.get(i));
+			}
+		}
+		final Condition finalCondition = condition;
+		List<String> tagIds = doOperation(context -> context
+			.select(field_id)
+			.from(table_tags)
+			.where(finalCondition)
+			.fetchInto(String.class));
 		return doOperation(context -> {
 			return context.insertInto(table_files)
 					.set(field_file, file.getName())
-					.set(field_tags, String.join(",", tags))
+					.set(field_tags, String.join(",", tagIds))
 					.execute();
 		});
+	}
+
+	public ITaggedFile getTaggedFile(String fileName) {
+		return doOperation(context -> context
+				.select()
+				.from(table_files)
+				.where(field_file.eq(fileName))
+				.fetchOneInto(TaggedFile.class));
 	}
 
 }

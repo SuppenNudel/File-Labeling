@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import de.rohmio.util.filelabeling.database.SQLiteConnector;
+import de.rohmio.util.filelabeling.model.ITaggedFile;
 import de.rohmio.util.filelabeling.model.Tag;
 
 public class SQLiteTest {
@@ -26,17 +27,23 @@ public class SQLiteTest {
 		Tag tag1 = new Tag("some label", "some category");
 		Tag tag2 = new Tag("some label", "some other category");
 		Tag tag3 = new Tag("some other label", "some category");
+		Tag tag4 = new Tag("some other label", "some other category");
 		assertEquals(1, conn.createTagsIfNotExist(tag1));
-		assertEquals(2, conn.createTagsIfNotExist(
+		assertEquals(3, conn.createTagsIfNotExist(
 				tag2,
-				tag3));
+				tag3,
+				tag4));
 		assertEquals(0, conn.createTagsIfNotExist(tag1));
 		
 		List<Tag> tags = conn.getTags();
-		assertEquals(3, tags.size());
+		assertEquals(4, tags.size());
 		System.out.println(tags);
+
+		conn.createFile(new File("test-file"), tag1, tag4);
+		conn.createFile(new File("test-file2"));
 		
-		conn.createFile(new File("test-file"), tag2);
+		ITaggedFile taggedFile = conn.getTaggedFile("test-file");
+		System.out.println(taggedFile);
 	}
 	
 }
