@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import de.rohmio.util.filelabeling.database.SQLiteConnector;
 import de.rohmio.util.filelabeling.model.ITaggedFile;
 import de.rohmio.util.filelabeling.model.Tag;
+import de.Constants;
 
 public class SQLiteTest {
 
@@ -18,8 +19,8 @@ public class SQLiteTest {
 	
 	@BeforeAll
 	public static void initDatabase() {
-		new File("test.db").delete();
-		conn = new SQLiteConnector("test.db");
+		new File(Constants.DataBaseName).delete();
+		conn = new SQLiteConnector(Constants.DataBaseName);
 	}
 	
 	@Test

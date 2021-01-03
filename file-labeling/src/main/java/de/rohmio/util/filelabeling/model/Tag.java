@@ -6,7 +6,9 @@ public class Tag implements ITag {
 	private String name;
 	private String category;
 	
-	private Tag() {}
+	private Tag() {
+		//n7den: access database via singleton, create tag in database, set id
+	}
 	
 	public Tag(String name) {
 		this();
