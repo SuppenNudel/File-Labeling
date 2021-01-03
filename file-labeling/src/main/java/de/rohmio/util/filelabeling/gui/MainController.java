@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -38,6 +39,8 @@ public class MainController implements Initializable {
 	
 	private ImagePreviewController imagePreviewController;
 	
+	private List<String> availableColors = new LinkedList<String>(Arrays.asList("ffff00", "ffa500", "e06f1f", "ff0000", "ff00ff", "8a2be2", "0000ff", "00ff00"));
+	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		loadImagePreviewController();
@@ -47,6 +50,8 @@ public class MainController implements Initializable {
 				new Tag("Hat"),
 				new Tag("Tryndamere", "LoL"),
 				new Tag("Ashe", "Overwatch"),
+				new Tag("Sylvari", "Guild Wars 2"),
+				new Tag("Liliana", "Magic: the Gathering"),
 				new Tag("Garen", "LoL"));
 		tags.sort(new Comparator<ITag>() {
 			@Override
@@ -65,6 +70,8 @@ public class MainController implements Initializable {
 				return;
 			}
 			CategoryButton button = new CategoryButton(cat);
+			String color = availableColors.remove(0);
+			button.setBackgroundColor(color);
 			categoryButtons.put(cat, button);
 			categoriesPane.getChildren().add(button);
 		});
@@ -73,7 +80,9 @@ public class MainController implements Initializable {
 			if(tag.getCategory() == null) {
 				button.hideOn(null);
 			} else {
-				button.hideOn(categoryButtons.get(tag.getCategory()).selectedProperty());
+				CategoryButton categoryButton = categoryButtons.get(tag.getCategory());
+				button.setBackgroundColor(categoryButton.getBackgroundColor());
+				button.hideOn(categoryButton.selectedProperty());
 			}
 			tagsPane.getChildren().add(button);
 		});
