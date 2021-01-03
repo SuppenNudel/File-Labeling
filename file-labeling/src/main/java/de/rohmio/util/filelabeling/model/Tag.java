@@ -1,20 +1,30 @@
 package de.rohmio.util.filelabeling.model;
 
+import de.rohmio.util.filelabeling.database.ConnectorAccessor;
+
 public class Tag implements ITag {
 	
 	private int id;
 	private String name;
 	private String category;
 	
-	private Tag() {}
-	
 	public Tag(String name) {
-		this();
-		this.name = name;
+		this(name, null);
 	}
 	
 	public Tag(String name, String category) {
-		this(name);
+		this.name = name;
+		this.category = category;
+		this.id = ConnectorAccessor.Instance().Connector().createTagAndGetId(name, category);
+	}
+	
+	/**
+	 * This constructor exists only for the SqlConnector
+	 */
+	@SuppressWarnings("unused")
+	private Tag(int id, String name, String category) {
+		this.id = id;
+		this.name = name;
 		this.category = category;
 	}
 	
