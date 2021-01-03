@@ -1,6 +1,6 @@
 package de.rohmio.util.filelabeling.database;
-import de.Constants;
-import de.rohmio.util.filelabeling.database.SQLiteConnector;
+
+import de.rohmio.util.filelabeling.Constants;
 
 // Singleton giving access to the database from everywhere in the code.
 // Reduces the need to pass the SQLiteConnector itself up and down the chain.
