@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.InsertValuesStep2;
+import org.jooq.Record1;
 import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
@@ -69,7 +69,7 @@ public class SQLiteConnector {
 				.column(field_id)
 				.column(field_file)
 				.column(field_tags)
-				.constraint(DSL.unique(field_file))
+				.constraints(DSL.unique(field_file))
 				.execute());
 	}
 
@@ -79,20 +79,31 @@ public class SQLiteConnector {
 				.column(field_id)
 				.column(field_name)
 				.column(field_category)
-				.constraint(DSL.unique(field_name, field_category))
+				.constraints(DSL.unique(field_name, field_category))
 				.execute());
 	}
 	
-	public int createTagsIfNotExist(Tag... tags) {
-		return doOperation(context -> {
-			InsertValuesStep2<?, String, String> insert = context
+	public Integer createTagAndGetId(String tagName, String category) {
+		Record1<Integer> record = doOperation(context -> {
+			return context
 			.insertInto(table_tags)
-			.columns(field_name, field_category);
-			for(Tag tag : tags) {
-				insert.values(tag.getName(), tag.getCategory());
-			}
-			return insert.onDuplicateKeyIgnore().execute();
+			.set(field_name, tagName)
+			.set(field_category, category)
+			.onDuplicateKeyIgnore()
+			.returningResult(field_id)
+			.fetchOne();
 		});
+		Integer id;
+		if(record == null) {
+			id = doOperation(context ->
+				context.select(field_id)
+				.from(table_tags)
+				.where(field_name.eq(tagName).and(field_category.eq(category)))
+				.fetchOneInto(Integer.class));
+		} else {
+			id = record.get(field_id);
+		}
+		return id;
 	}
 	
 	public List<Tag> getTags() {
