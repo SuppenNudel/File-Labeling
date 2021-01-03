@@ -1,93 +1,103 @@
 package de.rohmio.util.filelabeling.gui;
 
 import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.IntegerBinding;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import de.rohmio.util.filelabeling.Util;
+import de.rohmio.util.filelabeling.model.ITag;
+import de.rohmio.util.filelabeling.model.Tag;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.Node;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 
 public class MainController implements Initializable {
 
 	@FXML
-	private Label currentFileNameLabel;
-	@FXML
-	private ProgressBar imageLoadingProgress;
-	@FXML
-	private Button previousButton;
-	@FXML
-	private Button nextButton;
+	private BorderPane mainPane; 
 	
 	@FXML
-	private ImageView previewImageView;
-	
+	private FlowPane categoriesPane;
 	@FXML
-	private Label leftStatus;
+	private FlowPane tagsPane;
 	
-	private ObservableList<File> loadedFiles = FXCollections.observableArrayList();
-	private IntegerProperty idx = new SimpleIntegerProperty(0);
+	private Map<String, CategoryButton> categoryButtons = new HashMap<>();
 	
-//	private Image[] imageCache = new Image[3];
+	private ImagePreviewController imagePreviewController;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		previousButton.disableProperty().bind(idx.lessThanOrEqualTo(0));
+		loadImagePreviewController();
 		
-		IntegerBinding sizeProperty = Bindings.size(loadedFiles).add(-1);
-		nextButton.disableProperty().bind(idx.greaterThanOrEqualTo(sizeProperty));
-		
-		idx.addListener(new ChangeListener<Number>() {
+		List<ITag> tags = Arrays.asList(
+				new Tag("Ashe", "LoL"),
+				new Tag("Hat"),
+				new Tag("Tryndamere", "LoL"),
+				new Tag("Ashe", "Overwatch"),
+				new Tag("Garen", "LoL"));
+		tags.sort(new Comparator<ITag>() {
 			@Override
-			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-				loadImage(loadedFiles.get(newValue.intValue()));
+			public int compare(ITag o1, ITag o2) {
+				if(o2.getCategory() == null && o1.getCategory() != null) {
+					return -1;
+				} else if(o1.getCategory() == null && o2.getCategory() != null) {
+					return 1;
+				} else {
+					return o1.getCategory().compareTo(o2.getCategory());
+				}
 			}
 		});
+		tags.stream().map(ITag::getCategory).distinct().forEach(cat -> {
+			if(cat == null || cat.isEmpty()) {
+				return;
+			}
+			CategoryButton button = new CategoryButton(cat);
+			categoryButtons.put(cat, button);
+			categoriesPane.getChildren().add(button);
+		});
+		tags.stream().forEach(tag -> {
+			TagButton button = new TagButton(tag);
+			if(tag.getCategory() == null) {
+				button.hideOn(null);
+			} else {
+				button.hideOn(categoryButtons.get(tag.getCategory()).selectedProperty());
+			}
+			tagsPane.getChildren().add(button);
+		});
+	}
+	
+	private void loadImagePreviewController() {
+		FXMLLoader loader = new FXMLLoader(ImagePreviewController.class.getResource("imagePreview.fxml"));
+		try {
+			Node imagePreview = loader.load();
+			mainPane.setRight(imagePreview);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		imagePreviewController = loader.getController();
 	}
 	
 	@FXML
 	private void nextImage() {
-		if(idx.get() + 1 >= loadedFiles.size()) {
-			return;
-		}
-		idx.set(idx.get() + 1);
+		imagePreviewController.nextImage();
 	}
 	
 	@FXML
 	private void prevImage() {
-		if(idx.get() - 1 < 0) {
-			return;
-		}
-		idx.set(idx.get() - 1);
-	}
-	
-	public void loadImage(File file) {
-		currentFileNameLabel.setText(file.getName());
-		try {
-			Image image = new Image(file.toURI().toURL().toString(), true);
-			imageLoadingProgress.progressProperty().bind(image.progressProperty());
-			previewImageView.setImage(image);
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
+		imagePreviewController.prevImage();
 	}
 	
 	@FXML
@@ -103,35 +113,15 @@ public class MainController implements Initializable {
 		Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasFiles()) {
-        	leftStatus.setText(db.getFiles().toString());
-        	
         	List<File> allFiles = new ArrayList<>();
         	for(File file : db.getFiles()) {
-        		allFiles.addAll(getFilesRecurively(file));
+        		allFiles.addAll(Util.getFilesRecurively(file));
         	}
-        	loadedFiles.setAll(allFiles);
-        	idx.set(0);
-        	loadImage(loadedFiles.get(0));
+        	imagePreviewController.setFiles(allFiles);
             success = true;
         }
         event.setDropCompleted(success);
         event.consume();
-	}
-	
-	private List<File> getFilesRecurively(File directory) {
-		List<File> files = new ArrayList<>();
-		if(directory.isFile()) {
-			files.add(directory);
-			return files;
-		}
-		for(File file : directory.listFiles()) {
-			if(file.isDirectory()) {
-				files.addAll(getFilesRecurively(file));
-			} else {
-				files.add(file);
-			}
-		}
-		return files;
 	}
 
 }

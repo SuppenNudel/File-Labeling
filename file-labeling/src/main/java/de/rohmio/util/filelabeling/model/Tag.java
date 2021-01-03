@@ -20,7 +20,11 @@ public class Tag implements ITag {
 	
 	@Override
 	public String toString() {
-		return String.format("%s (%s)", name, category);
+		if(category == null) {
+			return name;
+		} else {
+			return String.format("%s (%s)", name, category);
+		}
 	}
 	
 	@Override
