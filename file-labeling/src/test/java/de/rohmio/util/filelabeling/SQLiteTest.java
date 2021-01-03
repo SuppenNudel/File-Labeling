@@ -1,6 +1,7 @@
 package de.rohmio.util.filelabeling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,6 +56,11 @@ public class SQLiteTest {
 		
 		Integer woCat = conn.createTagAndGetId("withough category", null);
 		assertNotNull(woCat);
+
+		// Make sure different tags have actually different IDs
+		assertNotEquals(createTag,  createTag2);
+		assertNotEquals(createTag,  woCat);
+		assertNotEquals(createTag2, woCat);
 	}
 	
 }
